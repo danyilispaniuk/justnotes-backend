@@ -32,6 +32,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapNotes();
+app.MapNotepads();
 
 var summaries = new[]
 {
