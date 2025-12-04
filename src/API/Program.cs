@@ -33,6 +33,7 @@ app.UseHttpsRedirection();
 
 app.MapNotes();
 app.MapNotepads();
+app.MapSearches();
 
 var summaries = new[]
 {

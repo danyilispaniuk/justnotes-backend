@@ -104,4 +104,36 @@ public class NotepadService
 
     public async Task RemoveAsync(string id) =>
         await collection.DeleteOneAsync(x => x.Id == id);
+    
+    public async Task<List<NotepadDTO>> SearchNotepad(string searchWord)
+    {
+        var notepads = await collection.Find(x => x.Name.Contains(searchWord)).ToListAsync();
+        List<NotepadDTO> res = new List<NotepadDTO>();
+
+        foreach (var np in notepads)
+        {
+            var notes = np.Notes?.ToList() ?? new List<Note>();
+
+            var noteDTOs = notes.Select(n => new NoteDTO
+            {
+                id = n.Id,
+                notepadId = n.NotepadId,
+                header = n.Header,
+                notes = n.Notes,
+                created = n.Created.ToString(),
+                updated = n.Updated.ToString()
+            }).ToArray();
+
+            res.Add(new NotepadDTO
+            {
+                id = np.Id,
+                name = np.Name,
+                created = np.Created.ToString(),
+                updated = np.Updated.ToString(),
+                notes = noteDTOs
+            });
+        }
+
+        return res;
+    }
 }
