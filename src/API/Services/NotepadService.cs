@@ -26,8 +26,6 @@ public class NotepadService
             Updated = DateTime.UtcNow,
         };
 
-        //Notes = n.notes,
-
         await collection.InsertOneAsync(notepad);
     }
 
@@ -36,21 +34,28 @@ public class NotepadService
         var notepads = await collection.Find(_ => true).ToListAsync();
         List<NotepadDTO> res = new List<NotepadDTO>();
 
-        if(notepads.Count > 0)
+        foreach (var np in notepads)
         {
-            for (int i = 0; i < notepads.Count; i++)
-            {
-                NotepadDTO notepadToDTO = new NotepadDTO
-                {
-                    id = notepads[i].Id,
-                    name = notepads[i].Name,
-                    notes = notepads[i].Notes,
-                    created = notepads[i].Created.ToString(),
-                    updated = notepads[i].Updated.ToString()
-                };
+            var notes = np.Notes?.ToList() ?? new List<Note>();
 
-                res.Add(notepadToDTO);
-            }
+            var noteDTOs = notes.Select(n => new NoteDTO
+            {
+                id = n.Id,
+                notepadId = n.NotepadId,
+                header = n.Header,
+                notes = n.Notes,
+                created = n.Created.ToString(),
+                updated = n.Updated.ToString()
+            }).ToArray();
+
+            res.Add(new NotepadDTO
+            {
+                id = np.Id,
+                name = np.Name,
+                created = np.Created.ToString(),
+                updated = np.Updated.ToString(),
+                notes = noteDTOs
+            });
         }
 
         return res;
@@ -64,20 +69,37 @@ public class NotepadService
         {
             return new NotepadDTO
             {
+                id = null,
                 notes = null,
                 name = null,
                 created = null,
                 updated = null
             };
         }
-
-        return new NotepadDTO
+        
+        var res = new NotepadDTO
         {
+            id = notepad.Id,
             name = notepad.Name,
-            notes = notepad.Notes,
             created = notepad.Created.ToString(),
             updated = notepad.Updated.ToString()
         };
+
+        var notes = notepad.Notes?.ToList() ?? new List<Note>();
+
+        var noteDTOs = notes.Select(n => new NoteDTO
+        {
+            id = n.Id,
+            notepadId = n.NotepadId,
+            header = n.Header,
+            notes = n.Notes,
+            created = n.Created.ToString(),
+            updated = n.Updated.ToString()
+        }).ToArray();
+
+        res.notes = noteDTOs;
+
+        return res;
     }
 
     public async Task RemoveAsync(string id) =>

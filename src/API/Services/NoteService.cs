@@ -19,7 +19,7 @@ public class NoteService
         collection = db.GetCollection<Note>(settings.Value.CollectionName);
     }
 
-        public async Task CreateNoteAsync(NewNoteDTO n)
+    public async Task CreateNoteAsync(NewNoteDTO n)
     {
         n.header ??= n.notes;;
         
@@ -65,9 +65,6 @@ public class NoteService
 
         return res;
     }
-    
-    // public async Task<List<Note>> GetNotesAsync() =>
-    //     await collection.Find(_ => true).ToListAsync();
 
     public async Task<NoteDTO> GetAsync(string id)
     {
