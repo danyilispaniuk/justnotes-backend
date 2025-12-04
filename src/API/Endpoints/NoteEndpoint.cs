@@ -1,3 +1,4 @@
+using API.DTOs;
 using API.Models;
 using API.Services;
 
@@ -19,13 +20,28 @@ public static class NoteEndpoint
             return Results.Ok(list);
         });
 
-        group.MapPost("/", async (NoteService service, Note n) =>
+        group.MapPost("/", async (NoteService service, NewNoteDTO n) =>
         {
-            n.Deleted = null;
-            n.Id = null;
             await service.CreateNoteAsync(n);
             return Results.Ok(n);
             // return Results.Created($"{route}/{n.Id}", n);
+        });
+
+        group.MapGet("/{id}", async (NoteService service, string id) =>
+        {
+            var s = await service.GetAsync(id);
+            return s != null ? Results.Ok(s) : Results.NotFound();
+        });
+
+        group.MapDelete("/", async (NoteService service, string id) =>
+        {
+            var note = await service.GetAsync(id);
+
+            if (note is null)
+                return Results.NotFound();
+
+            await service.RemoveAsync(id);
+            return Results.NoContent();
         });
 
         return routes;
