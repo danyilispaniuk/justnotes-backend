@@ -21,7 +21,7 @@ public class NoteService
         this.notepadService = notepadService;
     }
 
-    public async Task CreateNoteAsync(NewNoteDTO n)
+    public async Task CreateAsync(NewNoteDTO n)
     {
         n.header ??= n.notes;
 
@@ -92,7 +92,7 @@ public class NoteService
     //     return result;
     // }
 
-    public async Task<List<NoteDTO>?> SearchNote(string searchWord)
+    public async Task<List<NoteDTO>> SearchAsync(string searchWord)
     {
         var notes = await collection.Find(x => x.Header.Contains(searchWord)).ToListAsync();
 

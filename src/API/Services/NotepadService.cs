@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 
 using API.DTOs;
 using API.Models;
-using Microsoft.VisualBasic;
 
 namespace API.Services;
 public class NotepadService
@@ -17,7 +16,7 @@ public class NotepadService
         collection = db.GetCollection<Notepad>(settings.Value.CollectionName);
     }
 
-    public async Task CreateNotepadAsync(NewNotepadDTO n)
+    public async Task CreateAsync(NewNotepadDTO n)
     {
         var notepad = new Notepad
         {
@@ -29,7 +28,7 @@ public class NotepadService
         await collection.InsertOneAsync(notepad);
     }
 
-    public async Task<List<NotepadDTO>> GetNotepadsAsync()
+    public async Task<List<NotepadDTO>>GetNotepadsAsync()
     {
         var notepads = await collection.Find(_ => true).ToListAsync();
         List<NotepadDTO> res = new List<NotepadDTO>();
@@ -61,7 +60,7 @@ public class NotepadService
         return res;
     }
 
-    public async Task<NotepadDTO> GetAsync(string id)
+    public async Task<NotepadDTO>GetAsync(string id)
     {
         var notepad = await collection.Find(x => x.Id == id).FirstOrDefaultAsync();
 
@@ -102,10 +101,94 @@ public class NotepadService
         return res;
     }
 
+    public async Task<NotepadDTO>UpdateAsync(string id, NotepadDTO notepad)
+    {
+        
+        if (notepad.name != null | notepad.name != "")
+        {
+            var filter = Builders<Notepad>.Filter.Eq(n => n.Id, id);
+            var update = Builders<Notepad>.Update.
+                Set(n => n.Name, notepad.name).
+                Set(n => n.Updated, DateTime.UtcNow);
+
+            var updateResult = await collection.UpdateOneAsync(filter, update);
+            if (updateResult.IsAcknowledged && updateResult.ModifiedCount > 0)
+            {
+                Console.WriteLine($"Successfully updated {updateResult.ModifiedCount} document(s).");
+            }
+            else if (updateResult.MatchedCount > 0 && updateResult.ModifiedCount == 0)
+            {
+                Console.WriteLine("Document matched, but no changes were applied (maybe the values were already the same).");
+            }
+            else
+            {
+                Console.WriteLine("No document matched the filter.");
+            }
+        }
+
+        NotepadDTO res = await GetAsync(id);
+        return res;
+    }
+    // {
+    //     var dbNotepad = await collection.Find(x => x.Id == notepad.id).FirstOrDefaultAsync();
+
+    //     if(notepad.name != null) dbNotepad.Name = notepad.name;
+    //     if(notepad.notes != null)
+    //     {
+    //         Note[] notesToSave = [];
+    //         foreach(var note in notepad.notes)
+    //         {
+    //             var noteToSave = new Note
+    //             {
+    //                 Id = note.id,
+    //                 Notes = note.notes,
+    //                 Header = note.header,
+    //                 Created = DateTime.Parse(note.created),
+    //                 Updated = DateTime.Parse(note.updated),
+    //             };
+    //             notesToSave.Append(noteToSave);
+    //         }
+    //         dbNotepad.Notes = notesToSave;
+    //         NoteDTO[] noteDTOs = [];
+    //         foreach (var note in dbNotepad.Notes)
+    //         {
+    //             var noteDTO = new NoteDTO
+    //             {
+    //                 id = note.Id,
+    //                 notes = note.Notes,
+    //                 header = note.Header,
+    //                 created = note.Created.ToString(),
+    //                 updated = note.Updated.ToString(),
+    //             };
+    //         }
+
+    //         dbNotepad.Updated = DateTime.UtcNow;
+
+    //         return new NotepadDTO
+    //         {
+    //             id = dbNotepad.Id,
+    //             name = dbNotepad.Name,
+    //             notes = noteDTOs,
+    //             created = dbNotepad.Created.ToString(),
+    //             updated = dbNotepad.Updated.ToString()
+    //         };
+    //     }
+        
+    //     dbNotepad.Updated = DateTime.UtcNow;
+    //     return new NotepadDTO
+    //     {
+    //         id = dbNotepad.Id,
+    //         name = dbNotepad.Name,
+    //         notes = [],
+    //         created = dbNotepad.Created.ToString(),
+    //         updated = dbNotepad.Updated.ToString()
+    //     };
+    // }
+
     public async Task RemoveAsync(string id) =>
         await collection.DeleteOneAsync(x => x.Id == id);
     
-    public async Task<List<NotepadDTO>> SearchNotepad(string searchWord)
+    public async Task<List<NotepadDTO>> SearchAsync(string searchWord)
     {
         var notepads = await collection.Find(x => x.Name.Contains(searchWord)).ToListAsync();
         List<NotepadDTO> res = new List<NotepadDTO>();
