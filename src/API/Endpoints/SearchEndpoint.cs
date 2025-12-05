@@ -15,8 +15,8 @@ public static class SearchEndpoint
 
         group.MapGet("/{searchWord}", async (NoteService noteService, NotepadService notepadService, string searchWord) =>
         {
-            var noteList = await noteService.SearchNote(searchWord);
-            var notepadList = await notepadService.SearchNotepad(searchWord);
+            var noteList = await noteService.SearchAsync(searchWord);
+            var notepadList = await notepadService.SearchAsync(searchWord);
 
             List<object> list = [noteList, notepadList];
 

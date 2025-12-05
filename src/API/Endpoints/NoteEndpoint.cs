@@ -22,7 +22,7 @@ public static class NoteEndpoint
 
         group.MapPost("/", async (NoteService service, NewNoteDTO n) =>
         {
-            await service.CreateNoteAsync(n);
+            await service.CreateAsync(n);
             return Results.Ok(n);
             // return Results.Created($"{route}/{n.Id}", n);
         });
