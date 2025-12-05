@@ -10,13 +10,15 @@ namespace API.Services;
 public class NoteService
 {
     private readonly IMongoCollection<Note> collection;
+    private readonly IMongoCollection<Notepad> notepadCollection;
     private readonly NotepadService notepadService;
 
-    public NoteService(IOptions<NoteDatabaseSettings> settings, NotepadService notepadService)
+    public NoteService(IOptions<NoteDatabaseSettings> settings, IOptions<NotepadDatabaseSettings> notepadSettings, NotepadService notepadService)
     {
         var client = new MongoClient(settings.Value.ConnectionString);
         var db = client.GetDatabase(settings.Value.DatabaseName);
         collection = db.GetCollection<Note>(settings.Value.CollectionName);
+        notepadCollection = db.GetCollection<Notepad>(notepadSettings.Value.CollectionName);
 
         this.notepadService = notepadService;
     }
@@ -77,20 +79,45 @@ public class NoteService
         };
     }
 
+    public async Task UpdateAsync(string id, NoteDTO dto)
+    {
+        var note = await collection.Find(x => x.Id == id).FirstOrDefaultAsync();
+        if (note == null) return;
+
+        if (!string.IsNullOrWhiteSpace(dto.notes))
+            note.Notes = dto.notes;
+
+        if (string.IsNullOrWhiteSpace(dto.header) && !string.IsNullOrWhiteSpace(note.Notes))
+        {
+            note.Header = FirstFiveWords(note.Notes);
+        }
+        else
+        {
+            note.Header = dto.header;
+        }
+
+        note.Updated = DateTime.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(dto.notepadId))
+        {
+            var notepad = await notepadCollection.Find(x => x.Id == dto.notepadId).FirstOrDefaultAsync();
+
+            if (notepad != null)
+                note.NotepadId = dto.notepadId;
+            else
+                note.NotepadId = null;
+        }
+        else
+        {
+            note.NotepadId = null;
+        }
+
+        await collection.ReplaceOneAsync(x => x.Id == id, note);
+        Console.WriteLine($"Note update: {note.Id}");
+    }
+
     public async Task RemoveAsync(string id) =>
         await collection.DeleteOneAsync(x => x.Id == id);
-
-    // public async Task<List<Note>> SearchNoteAsync(string searchWord)
-    // {
-    //     var result = await collection.Aggregate()
-    //         .Search(x => x
-    //             .Autocomplete(n => n.Header, searchWord)
-    //             .Index("notesSearch")
-    //         )
-    //         .ToListAsync();
-
-    //     return result;
-    // }
 
     public async Task<List<NoteDTO>> SearchAsync(string searchWord)
     {
@@ -106,4 +133,14 @@ public class NoteService
             updated = n.Updated.ToString()
         }).ToList();
     }
+
+    public static string FirstFiveWords(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join(' ', words.Take(5));
+    }
+
 }

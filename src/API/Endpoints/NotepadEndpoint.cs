@@ -36,8 +36,7 @@ public static class NotepadEndpoint
 
         group.MapPut("/{id}", async (NotepadService service, string id, NotepadDTO n) =>
         {
-            var r = await service.UpdateAsync(id, n);
-            return Results.Ok(r);
+            await service.UpdateAsync(id, n);
         });
 
         group.MapDelete("/", async (NotepadService service, string id) =>

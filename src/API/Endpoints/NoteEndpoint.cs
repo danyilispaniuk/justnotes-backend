@@ -33,6 +33,11 @@ public static class NoteEndpoint
             return s != null ? Results.Ok(s) : Results.NotFound();
         });
 
+        group.MapPut("/{id}", async (NoteService service, string id, NoteDTO n) =>
+        {
+            await service.UpdateAsync(id, n);
+        });
+
         group.MapDelete("/", async (NoteService service, string id) =>
         {
             var note = await service.GetAsync(id);

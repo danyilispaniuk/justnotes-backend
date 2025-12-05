@@ -6,7 +6,7 @@ namespace API.DTOs
     {
         public string? id { get; set; }
         public string? name { get; set; }
-        public NoteDTO[]? notes { get; set; }
+        // public NoteDTO[]? notes { get; set; }
         
         public string? created { get; set; }
         public string? updated { get; set; }
