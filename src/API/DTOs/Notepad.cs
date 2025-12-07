@@ -4,11 +4,11 @@ namespace API.DTOs
 {
     public class NotepadDTO
     {
-        public string? id { get; set; }
-        public string? name { get; set; }
+        public string? Id { get; set; }
+        public string? Name { get; set; }
         // public NoteDTO[]? notes { get; set; }
         
-        public string? created { get; set; }
-        public string? updated { get; set; }
+        public string? Created { get; set; }
+        public string? Updated { get; set; }
     }
 }

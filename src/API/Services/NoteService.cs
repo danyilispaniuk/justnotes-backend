@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using API.DTOs;
 using API.Models;
 using API.Services;
+using MongoDB.Bson;
 
 namespace API.Services;
 public class NoteService
@@ -22,13 +23,13 @@ public class NoteService
 
         this.notepadService = notepadService;
     }
-
-    public async Task CreateAsync(NewNoteDTO n)
+    public async Task<NoteDTO> CreateAsync(NewNoteDTO n)
     {
-        n.header ??= n.notes;
+        n.header ??= FirstFiveWords(n.notes);
 
         var note = new Note
         {
+            Id = ObjectId.GenerateNewId().ToString(),
             NotepadId = null,
             Header = n.header,
             Notes = n.notes,
@@ -44,7 +45,41 @@ public class NoteService
         }
 
         await collection.InsertOneAsync(note);
+
+        return new NoteDTO
+        {
+            id = note.Id,
+            notepadId = note.NotepadId,
+            header = note.Header,
+            notes = note.Notes,
+            created = note.Created.ToString(),
+            updated = note.Updated.ToString()
+        };
     }
+
+    // public async Task CreateAsync(NewNoteDTO n)
+    // {
+    //     n.header ??= FirstFiveWords(n.notes);
+
+    //     var note = new Note
+    //     {
+    //         Id = null,
+    //         NotepadId = null,
+    //         Header = n.header,
+    //         Notes = n.notes,
+    //         Created = DateTime.UtcNow,
+    //         Updated = DateTime.UtcNow
+    //     };
+
+    //     if (!string.IsNullOrEmpty(n.notepadId))
+    //     {
+    //         var notepad = await notepadService.GetAsync(n.notepadId);
+    //         if (notepad != null)
+    //             note.NotepadId = n.notepadId;
+    //     }
+
+    //     await collection.InsertOneAsync(note);
+    // }
 
     public async Task<List<NoteDTO>> GetNotesAsync()
     {
@@ -79,6 +114,32 @@ public class NoteService
         };
     }
 
+    public async Task<NoteDTO[]?> GetByNotepadAsync(string id)
+    {
+        var notepad = await notepadCollection.Find(x => x.Id == id).FirstOrDefaultAsync();
+
+        if (notepad == null) return null;
+        
+        var notes = await collection.Find(x => x.NotepadId == id).ToListAsync();
+        if (notes == null) return null;
+        
+        List<NoteDTO> res = new List<NoteDTO>();
+        foreach (var note in notes)
+        {
+            res.Add(new NoteDTO
+            {
+                id = note.Id,
+                header = note.Header,
+                notes = note.Notes,
+                notepadId = note.NotepadId,
+                created = note.Created.ToString(),
+                updated = note.Updated.ToString()
+            });
+        }
+
+        return res.ToArray();
+    }
+
     public async Task UpdateAsync(string id, NoteDTO dto)
     {
         var note = await collection.Find(x => x.Id == id).FirstOrDefaultAsync();
@@ -93,7 +154,7 @@ public class NoteService
         }
         else
         {
-            note.Header = dto.header;
+            note.Header = dto.header??FirstFiveWords(note.Notes);
         }
 
         note.Updated = DateTime.UtcNow;
@@ -139,8 +200,9 @@ public class NoteService
         if (string.IsNullOrWhiteSpace(text))
             return string.Empty;
 
-        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var words = text
+            .Split(new[] { ' ', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+
         return string.Join(' ', words.Take(5));
     }
-
 }

@@ -3,29 +3,41 @@ using Microsoft.Extensions.Options;
 
 using API.DTOs;
 using API.Models;
+using MongoDB.Bson;
 
 namespace API.Services;
 public class NotepadService
 {
     private readonly IMongoCollection<Notepad> collection;
+    private readonly IMongoCollection<Note> noteCollection;
 
-    public NotepadService(IOptions<NotepadDatabaseSettings> settings)
+    public NotepadService(IOptions<NotepadDatabaseSettings> settings, IOptions<NoteDatabaseSettings> noteSettings)
     {
         var client = new MongoClient(settings.Value.ConnectionString);
         var db = client.GetDatabase(settings.Value.DatabaseName);
         collection = db.GetCollection<Notepad>(settings.Value.CollectionName);
+        noteCollection = db.GetCollection<Note>(noteSettings.Value.CollectionName);
     }
 
-    public async Task CreateAsync(NewNotepadDTO n)
+    public async Task<NotepadDTO> CreateAsync(NewNotepadDTO n)
     {
         var notepad = new Notepad
         {
-            Name = n.name,
+            Id = ObjectId.GenerateNewId().ToString(),
+            Name = n.Name,
             Created = DateTime.UtcNow,
             Updated = DateTime.UtcNow,
         };
 
         await collection.InsertOneAsync(notepad);
+
+        return new NotepadDTO
+        {
+            Id = notepad.Id,
+            Name = notepad.Name,
+            Created = notepad.Created.ToString(),
+            Updated = notepad.Updated.ToString()
+        };
     }
 
     public async Task<List<NotepadDTO>>GetNotepadsAsync()
@@ -35,25 +47,12 @@ public class NotepadService
 
         foreach (var np in notepads)
         {
-            var notes = np.Notes?.ToList() ?? new List<Note>();
-
-            var noteDTOs = notes.Select(n => new NoteDTO
-            {
-                id = n.Id,
-                notepadId = n.NotepadId,
-                header = n.Header,
-                notes = n.Notes,
-                created = n.Created.ToString(),
-                updated = n.Updated.ToString()
-            }).ToArray();
-
             res.Add(new NotepadDTO
             {
-                id = np.Id,
-                name = np.Name,
-                created = np.Created.ToString(),
-                updated = np.Updated.ToString(),
-                // notes = noteDTOs
+                Id = np.Id,
+                Name = np.Name,
+                Created = np.Created.ToString(),
+                Updated = np.Updated.ToString(),
             });
         }
 
@@ -71,25 +70,11 @@ public class NotepadService
         
         var res = new NotepadDTO
         {
-            id = notepad.Id,
-            name = notepad.Name,
-            created = notepad.Created.ToString(),
-            updated = notepad.Updated.ToString()
+            Id = notepad.Id,
+            Name = notepad.Name,
+            Created = notepad.Created.ToString(),
+            Updated = notepad.Updated.ToString(),
         };
-
-        var notes = notepad.Notes?.ToList() ?? new List<Note>();
-
-        var noteDTOs = notes.Select(n => new NoteDTO
-        {
-            id = n.Id,
-            notepadId = n.NotepadId,
-            header = n.Header,
-            notes = n.Notes,
-            created = n.Created.ToString(),
-            updated = n.Updated.ToString()
-        }).ToArray();
-
-        //res.notes = noteDTOs;
 
         return res;
     }
@@ -97,11 +82,11 @@ public class NotepadService
     public async Task UpdateAsync(string id, NotepadDTO notepad)
     {
         
-        if (!string.IsNullOrWhiteSpace(notepad.name))
+        if (!string.IsNullOrWhiteSpace(notepad.Name))
         {
             var filter = Builders<Notepad>.Filter.Eq(n => n.Id, id);
             var update = Builders<Notepad>.Update.
-                Set(n => n.Name, notepad.name).
+                Set(n => n.Name, notepad.Name).
                 Set(n => n.Updated, DateTime.UtcNow);
 
             var updateResult = await collection.UpdateOneAsync(filter, update);
@@ -109,8 +94,20 @@ public class NotepadService
         }
     }
 
-    public async Task RemoveAsync(string id) =>
-        await collection.DeleteOneAsync(x => x.Id == id);
+    public async Task RemoveAsync(string id)
+    {
+        var result = await collection.DeleteOneAsync(x => x.Id == id);
+        if (result.DeletedCount == 1)
+        {
+            var notes = await noteCollection.Find(x => x.Id == id).ToListAsync();
+
+            if (notes != null)
+            {
+                var filter = Builders<Note>.Filter.Eq(n => n.NotepadId, id);
+                noteCollection.DeleteMany(filter);
+            }
+        }
+    }
     
     public async Task<List<NotepadDTO>> SearchAsync(string searchWord)
     {
@@ -133,11 +130,10 @@ public class NotepadService
 
             res.Add(new NotepadDTO
             {
-                id = np.Id,
-                name = np.Name,
-                created = np.Created.ToString(),
-                updated = np.Updated.ToString(),
-                //notes = noteDTOs
+                Id = np.Id,
+                Name = np.Name,
+                Created = np.Created.ToString(),
+                Updated = np.Updated.ToString(),
             });
         }
 

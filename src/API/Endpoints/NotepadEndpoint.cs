@@ -23,9 +23,8 @@ public static class NotepadEndpoint
 
         group.MapPost("/", async (NotepadService service, NewNotepadDTO n) =>
         {
-            await service.CreateAsync(n);
-            return Results.Ok(n);
-            // return Results.Created($"{route}/{n.Id}", n);
+            var created = await service.CreateAsync(n);
+            return Results.Created($"{route}/{created.Id}", created);
         });
 
         group.MapGet("/{id}", async (NotepadService service, string id) =>
@@ -41,9 +40,9 @@ public static class NotepadEndpoint
 
         group.MapDelete("/", async (NotepadService service, string id) =>
         {
-            var student = await service.GetAsync(id);
+            var notepad = await service.GetAsync(id);
 
-            if (student is null)
+            if (notepad is null)
                 return Results.NotFound();
 
             await service.RemoveAsync(id);
