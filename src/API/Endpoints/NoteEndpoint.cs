@@ -51,7 +51,6 @@ public static class NoteEndpoint
         group.MapGet("/notepad/{id}", async (NoteService service, string id) =>
         {
             var s = await service.GetByNotepadAsync(id);
-            Console.WriteLine(s);
             return s != null ? Results.Ok(s) : Results.NotFound();
         });
 

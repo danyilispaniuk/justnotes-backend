@@ -38,10 +38,10 @@ public static class NotepadEndpoint
             await service.UpdateAsync(id, n);
         });
 
-        group.MapDelete("/", async (NotepadService service, string id) =>
+        group.MapDelete("/{id}", async (NotepadService service, string id) =>
         {
             var notepad = await service.GetAsync(id);
-
+ 
             if (notepad is null)
                 return Results.NotFound();
 
