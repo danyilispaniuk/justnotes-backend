@@ -2,11 +2,11 @@
 {
     public class NoteDTO
     {
-        public string? id { get; set; }
-        public string? notepadId { get; set; }
-        public string? header { get; set; }
-        public string? notes { get; set; }
-        public string? created { get; set; }
-        public string? updated { get; set; }
+        public string? Id { get; set; }
+        public string? NotepadId { get; set; }
+        public string? Header { get; set; }
+        public required string Notes { get; set; }
+        public string? Created { get; set; }
+        public string? Updated { get; set; }
     }
 }

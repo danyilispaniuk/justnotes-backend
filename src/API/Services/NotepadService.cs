@@ -21,40 +21,40 @@ public class NotepadService
 
     public async Task<NotepadDTO> CreateAsync(NewNotepadDTO n)
     {
-        var notepad = new Notepad
-        {
-            Id = ObjectId.GenerateNewId().ToString(),
-            Name = n.Name,
-            Created = DateTime.UtcNow,
-            Updated = DateTime.UtcNow,
-        };
+            var notepad = new Notepad
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = n.Name.ToString(),
+                Created = DateTime.UtcNow,
+                Updated = DateTime.UtcNow,
+            };
+            Console.WriteLine(notepad.Name);
 
-        await collection.InsertOneAsync(notepad);
+            await collection.InsertOneAsync(notepad);
 
-        return new NotepadDTO
-        {
-            Id = notepad.Id,
-            Name = notepad.Name,
-            Created = notepad.Created.ToString(),
-            Updated = notepad.Updated.ToString()
-        };
+            return new NotepadDTO
+            {
+                Id = notepad.Id,
+                Name = notepad.Name,
+                Created = notepad.Created.ToString("O"),
+                Updated = notepad.Updated.ToString("O")
+            };
     }
 
-    public async Task<List<NotepadDTO>>GetNotepadsAsync()
+    public async Task<List<NotepadDTO>> GetNotepadsAsync()
     {
         var notepads = await collection.Find(_ => true).ToListAsync();
-        List<NotepadDTO> res = new List<NotepadDTO>();
 
-        foreach (var np in notepads)
-        {
-            res.Add(new NotepadDTO
+        var res = notepads
+            .OrderByDescending(n => n.Updated)
+            .Select(np => new NotepadDTO
             {
                 Id = np.Id,
                 Name = np.Name,
-                Created = np.Created.ToString(),
-                Updated = np.Updated.ToString(),
-            });
-        }
+                Created = np.Created.ToString("O"),
+                Updated = np.Updated.ToString("O"),
+            })
+            .ToList();
 
         return res;
     }
@@ -72,8 +72,8 @@ public class NotepadService
         {
             Id = notepad.Id,
             Name = notepad.Name,
-            Created = notepad.Created.ToString(),
-            Updated = notepad.Updated.ToString(),
+            Created = notepad.Created.ToString("O"),
+            Updated = notepad.Updated.ToString("O")
         };
 
         return res;
@@ -120,20 +120,20 @@ public class NotepadService
 
             var noteDTOs = notes.Select(n => new NoteDTO
             {
-                id = n.Id,
-                notepadId = n.NotepadId,
-                header = n.Header,
-                notes = n.Notes,
-                created = n.Created.ToString(),
-                updated = n.Updated.ToString()
+                Id = n.Id,
+                NotepadId = n.NotepadId,
+                Header = n.Header,
+                Notes = n.Notes,
+                Created = n.Created.ToString("O"),
+                Updated = n.Updated.ToString("O")
             }).ToArray();
 
             res.Add(new NotepadDTO
             {
                 Id = np.Id,
                 Name = np.Name,
-                Created = np.Created.ToString(),
-                Updated = np.Updated.ToString(),
+                Created = np.Created.ToString("O"),
+                Updated = np.Updated.ToString("O")
             });
         }
 
